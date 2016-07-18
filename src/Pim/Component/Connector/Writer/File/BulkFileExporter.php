@@ -3,6 +3,8 @@
 namespace Pim\Component\Connector\Writer\File;
 
 use Akeneo\Component\FileStorage\Exception\FileTransferException;
+use Doctrine\Common\Collections\ArrayCollection;
+use Pim\Component\Catalog\Model\ProductValueInterface;
 use Symfony\Component\Filesystem\Filesystem;
 
 /**
@@ -17,33 +19,65 @@ class BulkFileExporter
     /** @var FileExporterInterface */
     protected $fileExporter;
 
+    /** @var FileExporterPathGeneratorInterface */
+    protected $fileExporterPath;
+
+    /** @var array */
+    protected $mediaAttributeTypes;
+
     /** @var array */
     protected $errors;
 
-    /** @var array */
-    protected $copiedMedia;
-
     /**
-     * @param FileExporterInterface $fileExporter
+     * @param FileExporterInterface              $fileExporter
+     * @param FileExporterPathGeneratorInterface $fileExporterPath
+     * @param array                              $mediaAttributeTypes
      */
-    public function __construct(FileExporterInterface $fileExporter)
-    {
-        $this->errors       = [];
-        $this->copiedMedia  = [];
+    public function __construct(
+        FileExporterInterface $fileExporter,
+        FileExporterPathGeneratorInterface $fileExporterPath,
+        array $mediaAttributeTypes
+    ) {
+        $this->errors = [];
         $this->fileExporter = $fileExporter;
+        $this->fileExporterPath = $fileExporterPath;
+        $this->mediaAttributeTypes = $mediaAttributeTypes;
     }
 
     /**
      * Export the media of the items to the target
      *
-     * @param array  $items
-     * @param string $target
+     * @param ArrayCollection $items
+     * @param string          $target
+     * @param string          $identifier
      */
-    public function exportAll(array $items, $target)
+    public function exportAll(ArrayCollection $items, $target, $identifier)
     {
-        foreach ($items as $media) {
-            foreach ($media as $medium) {
-                $this->doCopy($medium, $target);
+        foreach ($items as $value) {
+            if (!$value instanceof ProductValueInterface) {
+                throw new \InvalidArgumentException(
+                    'Value is not an instance of Pim\Component\Catalog\Model\ProductValueInterface.'
+                );
+            }
+
+            if (in_array($value->getAttribute()->getAttributeType(), $this->mediaAttributeTypes)
+                && null !== $medium = $value->getMedia()) {
+                $exportPath = $this->fileExporterPath->generate(
+                    [
+                        'locale' => $value->getLocale(),
+                        'scope'  => $value->getScope()
+                    ],
+                    [
+                        'identifier' => $identifier,
+                        'code'       => $value->getAttribute()->getCode()
+                    ]
+                );
+
+                $this->doCopy([
+                    'to'      => $exportPath . $medium->getOriginalFilename(),
+                    'from'    => $medium->getKey(),
+                    'storage' => $medium->getStorage()
+                ], $target);
             }
         }
     }
@@ -70,47 +104,23 @@ class BulkFileExporter
     }
 
     /**
-     * Returns media that have been well copied and path of the copy
-     *
-     * @return array
-     *  [
-     *      [
-     *          'copyPath'       => (string),
-     *          'originalMedium' => [
-     *              'filePath'     => (string),
-     *              'exportPath'   => (string),
-     *              'storageAlias' => (string)
-     *          ]
-     *      ],
-     *      [...]
-     *  ]
-     */
-    public function getCopiedMedia()
-    {
-        return $this->copiedMedia;
-    }
-
-    /**
      * Copy a medium to the target
      *
-     * @param array|mixed $medium
-     * @param string      $target
+     * @param array  $medium
+     * @param string $target
      */
-    protected function doCopy($medium, $target)
+    protected function doCopy(array $medium, $target)
     {
-        if (isset($medium['filePath']) && isset($medium['exportPath'])) {
-            $target     = $target . DIRECTORY_SEPARATOR . $medium['exportPath'];
-            $fileSystem = new Filesystem();
-            $fileSystem->mkdir(dirname($target));
+        $target = $target . DIRECTORY_SEPARATOR . $medium['to'];
+        $fileSystem = new Filesystem();
+        $fileSystem->mkdir(dirname($target));
 
-            try {
-                $this->fileExporter->export($medium['filePath'], $target, $medium['storageAlias']);
-                $this->addCopiedMedium($medium, $target);
-            } catch (FileTransferException $e) {
-                $this->addError($medium, 'The media has not been found or is not currently available');
-            } catch (\LogicException $e) {
-                $this->addError($medium, sprintf('The media has not been copied. %s', $e->getMessage()));
-            }
+        try {
+            $this->fileExporter->export($medium['from'], $target, $medium['storage']);
+        } catch (FileTransferException $e) {
+            $this->addError($medium, 'The media has not been found or is not currently available');
+        } catch (\LogicException $e) {
+            $this->addError($medium, sprintf('The media has not been copied. %s', $e->getMessage()));
         }
     }
 
@@ -123,18 +133,6 @@ class BulkFileExporter
         $this->errors[] = [
             'message' => $message,
             'medium'  => $medium,
-        ];
-    }
-
-    /**
-     * @param array  $medium
-     * @param string $copyPath
-     */
-    protected function addCopiedMedium(array $medium, $copyPath)
-    {
-        $this->copiedMedia[] = [
-            'copyPath'       => $copyPath,
-            'originalMedium' => $medium
         ];
     }
 }

@@ -9,7 +9,9 @@ use Akeneo\Component\Batch\Model\StepExecution;
 use Akeneo\Component\Batch\Step\StepExecutionAwareInterface;
 use Akeneo\Component\StorageUtils\Detacher\ObjectDetacherInterface;
 use Pim\Component\Catalog\Builder\ProductBuilderInterface;
+use Pim\Component\Catalog\Model\ProductInterface;
 use Pim\Component\Catalog\Repository\ChannelRepositoryInterface;
+use Pim\Component\Connector\Writer\File\BulkFileExporter;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 /**
@@ -38,22 +40,28 @@ class ProductProcessor extends AbstractConfigurableStepElement implements
     /** @var StepExecution */
     protected $stepExecution;
 
+    /** @var BulkFileExporter */
+    protected $mediaExporter;
+
     /**
      * @param NormalizerInterface        $normalizer
      * @param ChannelRepositoryInterface $channelRepository
      * @param ProductBuilderInterface    $productBuilder
      * @param ObjectDetacherInterface    $detacher
+     * @param BulkFileExporter           $mediaExporter
      */
     public function __construct(
         NormalizerInterface $normalizer,
         ChannelRepositoryInterface $channelRepository,
         ProductBuilderInterface $productBuilder,
-        ObjectDetacherInterface $detacher
+        ObjectDetacherInterface $detacher,
+        BulkFileExporter $mediaExporter
     ) {
         $this->normalizer = $normalizer;
         $this->detacher = $detacher;
         $this->channelRepository = $channelRepository;
         $this->productBuilder = $productBuilder;
+        $this->mediaExporter = $mediaExporter;
     }
 
     /**
@@ -62,18 +70,20 @@ class ProductProcessor extends AbstractConfigurableStepElement implements
     public function process($product)
     {
         $parameters = $this->stepExecution->getJobParameters();
-        $channelCode = $parameters->get('channel');
-        $channel = $this->channelRepository->findOneByIdentifier($channelCode);
-        $this->productBuilder->addMissingProductValues(
-            $product,
-            [$channel],
-            $channel->getLocales()->toArray()
+        $structure =  $parameters->get('filters')['structure'];
+        $channel = $this->channelRepository->findOneByIdentifier($structure['scope']);
+        $this->productBuilder->addMissingProductValues($product, [$channel], $channel->getLocales()->toArray());
+
+        $productStandard = $this->normalizer->normalize($product, 'json');
+        $productStandard['values'] = $this->filterValues(
+            $productStandard['values'],
+            array_intersect($channel->getLocaleCodes(), $structure['locales']),
+            $channel->getCode()
         );
 
-        $productStandard = $this->normalizer->normalize($product, 'json', [
-            'scopeCode'   => $channel->getCode(),
-            'localeCodes' => array_intersect($channel->getLocaleCodes(), $parameters->get('locales')),
-        ]);
+        if ($parameters->has('with_media') && $parameters->get('with_media')) {
+            $this->exportMedia($product, $parameters);
+        }
 
         $this->detacher->detach($product);
 
@@ -86,5 +96,45 @@ class ProductProcessor extends AbstractConfigurableStepElement implements
     public function setStepExecution(StepExecution $stepExecution)
     {
         $this->stepExecution = $stepExecution;
+    }
+
+    /**
+     * Export media on the local filesystem
+     *
+     * @param ProductInterface $product
+     * @param JobParameters    $parameters
+     */
+    protected function exportMedia(ProductInterface $product, JobParameters $parameters)
+    {
+        $directory = dirname($parameters->get('filePath'));
+        $identifier = $product->getIdentifier()->getData();
+        $this->mediaExporter->exportAll($product->getValues(), $directory, $identifier);
+
+        foreach ($this->mediaExporter->getErrors() as $error) {
+            $this->stepExecution->addWarning($error['message'], [], $error['medium']);
+        }
+    }
+
+    /**
+     * Filter values to keep only values with scope & locales defined by job
+     *
+     * @param array  $values
+     * @param array  $localeCodes
+     * @param string $channelCode
+     *
+     * @return array
+     */
+    protected function filterValues(array $values, array $localeCodes, $channelCode)
+    {
+        foreach ($values as $code => $value) {
+            $values[$code] = array_filter($value, function ($data) use ($channelCode, $localeCodes) {
+                $keepScope = null === $data['scope'] || $data['scope'] === $channelCode;
+                $keepLocale = null === $data['locale'] || in_array($data['locale'], $localeCodes);
+
+                return $keepScope && $keepLocale;
+            });
+        }
+
+        return $values;
     }
 }
