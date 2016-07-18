@@ -63,6 +63,7 @@ class NumberLocalizer implements LocalizerInterface
             return $numberFormatter->format($number);
         }
 
+        $number = true === $options['decimal_allowed'] ? number_format($number, 2) : floatval($number);
         $matchesNumber = $this->getMatchesNumber($number);
         if (!isset($matchesNumber['decimal'])) {
             return $number;
@@ -144,10 +145,18 @@ class NumberLocalizer implements LocalizerInterface
      */
     protected function getOptions(array $options)
     {
+        // tmp: add a resolver
+        if (!isset($options['decimal_allowed'])) {
+            $options['decimal_allowed'] = false;
+        }
+
         if (isset($options['decimal_separator']) || isset($options['locale'])) {
             return $options;
         }
 
-        return ['decimal_separator' => LocalizerInterface::DEFAULT_DECIMAL_SEPARATOR];
+        return [
+            'decimal_separator' => LocalizerInterface::DEFAULT_DECIMAL_SEPARATOR,
+            'decimal_allowed'   => false,
+        ];
     }
 }
