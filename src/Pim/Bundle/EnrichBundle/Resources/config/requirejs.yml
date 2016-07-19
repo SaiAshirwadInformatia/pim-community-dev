@@ -246,7 +246,7 @@ config:
         pim/filter/attribute/price-collection: pimenrich/js/filter/attribute/price-collection
         pim/filter/attribute/select:           pimenrich/js/filter/attribute/select
         pim/filter/attribute/media:            pimenrich/js/filter/attribute/media
-
+        pim/filter/attribute/date:             pimenrich/js/filter/attribute/date
 
         # Product edit form
         pim/field-manager: pimenrich/js/product/field-manager
@@ -407,4 +407,4 @@ config:
         pim/template/filter/attribute/price-collection: pimenrich/templates/filter/attribute/price-collection.html
         pim/template/filter/attribute/select:           pimenrich/templates/filter/attribute/select.html
         pim/template/filter/attribute/media:            pimenrich/templates/filter/attribute/media.html
-
+        pim/template/filter/attribute/date:             pimenrich/templates/filter/attribute/date.html
