@@ -6,15 +6,114 @@ Feature: Browse the history in the history tab of the pinbar
 
   Background:
     Given a "default" catalog configuration
-    And the following products:
-      | sku       |
-      | pineapple |
     And I am logged in as "Mary"
 
   @jira https://akeneo.atlassian.net/browse/PIM-5828
   Scenario: Add pages to the pinbar
-    Given I am on the "pineapple" product page
+    When I am on the product index page
+    And I am on the family index page
     And I am on the home page
     When I click on the pin bar dot menu
     And I press the "History" button
-    Then I should see the text "Products pineapple | Edit"
+    Then I should see 2 "#history-content li" elements
+    And I should see "Families" in the "#history-content ul" element
+    And I should see "Products" in the "#history-content ul" element
+
+  @jira https://akeneo.atlassian.net/browse/PIM-5828
+  Scenario: Add pages to the pinbar 2
+    When I am on the product index page
+    And I am on the family index page
+    And I am on the home page
+    When I click on the pin bar dot menu
+    And I press the "History" button
+    Then I should see 2 "#history-content li" elements
+    And I should see "Families" in the "#history-content ul" element
+    And I should see "Products" in the "#history-content ul" element
+
+  @jira https://akeneo.atlassian.net/browse/PIM-5828
+  Scenario: Add pages to the pinbar 3
+    When I am on the product index page
+    And I am on the family index page
+    And I am on the home page
+    When I click on the pin bar dot menu
+    And I press the "History" button
+    Then I should see 2 "#history-content li" elements
+    And I should see "Families" in the "#history-content ul" element
+    And I should see "Products" in the "#history-content ul" element
+
+  @jira https://akeneo.atlassian.net/browse/PIM-5828
+  Scenario: Add pages to the pinbar 4
+    When I am on the product index page
+    And I am on the family index page
+    And I am on the home page
+    When I click on the pin bar dot menu
+    And I press the "History" button
+    Then I should see 2 "#history-content li" elements
+    And I should see "Families" in the "#history-content ul" element
+    And I should see "Products" in the "#history-content ul" element
+
+  @jira https://akeneo.atlassian.net/browse/PIM-5828
+  Scenario: Add pages to the pinbar 5
+    When I am on the product index page
+    And I am on the family index page
+    And I am on the home page
+    When I click on the pin bar dot menu
+    And I press the "History" button
+    Then I should see 2 "#history-content li" elements
+    And I should see "Families" in the "#history-content ul" element
+    And I should see "Products" in the "#history-content ul" element
+
+  @jira https://akeneo.atlassian.net/browse/PIM-5828
+  Scenario: Add pages to the pinbar 6
+    When I am on the product index page
+    And I am on the family index page
+    And I am on the home page
+    When I click on the pin bar dot menu
+    And I press the "History" button
+    Then I should see 2 "#history-content li" elements
+    And I should see "Families" in the "#history-content ul" element
+    And I should see "Products" in the "#history-content ul" element
+
+  @jira https://akeneo.atlassian.net/browse/PIM-5828
+  Scenario: Add pages to the pinbar 7
+    When I am on the product index page
+    And I am on the family index page
+    And I am on the home page
+    When I click on the pin bar dot menu
+    And I press the "History" button
+    Then I should see 2 "#history-content li" elements
+    And I should see "Families" in the "#history-content ul" element
+    And I should see "Products" in the "#history-content ul" element
+
+  @jira https://akeneo.atlassian.net/browse/PIM-5828
+  Scenario: Add pages to the pinbar 8
+    When I am on the product index page
+    And I am on the family index page
+    And I am on the home page
+    When I click on the pin bar dot menu
+    And I press the "History" button
+    Then I should see 2 "#history-content li" elements
+    And I should see "Families" in the "#history-content ul" element
+    And I should see "Products" in the "#history-content ul" element
+
+  @jira https://akeneo.atlassian.net/browse/PIM-5828
+  Scenario: Add pages to the pinbar 9
+    When I am on the product index page
+    And I am on the family index page
+    And I am on the home page
+    When I click on the pin bar dot menu
+    And I press the "History" button
+    Then I should see 2 "#history-content li" elements
+    And I should see "Families" in the "#history-content ul" element
+    And I should see "Products" in the "#history-content ul" element
+
+  @jira https://akeneo.atlassian.net/browse/PIM-5828
+  Scenario: Add pages to the pinbar 10
+    When I am on the product index page
+    And I am on the family index page
+    And I am on the home page
+    When I click on the pin bar dot menu
+    And I press the "History" button
+    Then I should see 2 "#history-content li" elements
+    And I should see "Families" in the "#history-content ul" element
+    And I should see "Products" in the "#history-content ul" element
