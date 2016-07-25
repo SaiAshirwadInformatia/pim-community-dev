@@ -275,6 +275,58 @@ my_bundle.mass_edit_action.my_action:
 ```
 In this example it is an action for the products grid and it must appear in the default group.
 
+## Product exports configuration format update
+
+As of 1.6, product export job configurations have a different format.
+
+**Before 1.6:**
+```
+csv_product_export:
+    connector: Akeneo CSV Connector
+    alias:     csv_product_export
+    label:     Demo product export
+    type:      export
+    configuration:
+        channel:    mobile
+        delimiter:  ;
+        enclosure:  '"'
+        withHeader: true
+        filePath:   /tmp/product.csv
+        decimalSeparator: .
+```
+
+**Since 1.6:**
+```
+csv_product_export:
+    connector: Akeneo CSV Connector
+    alias:     csv_product_export
+    label:     Demo CSV product export
+    type:      export
+    configuration:
+        delimiter:  ;
+        enclosure:  '"'
+        withHeader: true
+        filePath:   /tmp/product.csv
+        decimalSeparator: .
+        filters:
+            data: []
+            structure:
+                scope: mobile
+                locales:
+                    - fr_FR
+                    - en_US
+                    - de_DE
+```
+
+You can now notice a `filters` key containing `data` and `structure`.
+- `data`: Restrict rows to export
+- `structure`: Restrict columns to export
+
+To handle this migration, you must run the script `php upgrades/schema/orm/migrate_job_instance.php [--env=dev]`.
+It will adapt all your **product export jobs** to the new format.
+
+TODO: Add links to the docs.akeneo.com regarding this format update.
+
 ## Partially fix BC breaks
 
 If you have a standard installation with some custom code inside, the following command allows to update changed services or use statements.
